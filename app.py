@@ -1,23 +1,42 @@
 import os
 import time
-import requests
+import json
+import websocket
 
-# Reemplaza 'TU_ACCESS_TOKEN_AQUI' con el valor de tu accessToken copiado
-ACCESS_TOKEN = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkJseG' 
+# !!! REEMPLAZA ESTO CON TU ACCESSTOKEN REAL !!!
+ACCESS_TOKEN = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkJseG'
 
-print("✅ Bot de Grass iniciado con Access Token...")
+def run_grass_websocket():
+    # URL del servicio WebSocket de Grass
+    ws_url = "wss://proxy.wynd.network:443/ws?access_token=" + ACCESS_TOKEN
+    
+    def on_message(ws, message):
+        data = json.loads(message)
+        if data.get("action") == "AUTH_SUCCESS":
+            print("✅ Conectado y autenticado correctamente. ¡Ganando puntos!")
+            # Puedes enviar acciones adicionales aquí si es necesario
+    
+    def on_error(ws, error):
+        print(f"❌ Error en la conexión: {error}")
+    
+    def on_close(ws, close_status_code, close_msg):
+        print(f"🚪 Conexión cerrada. Status: {close_status_code} Msg: {close_msg}")
+        # Intentar reconectar automáticamente después de un tiempo
+        time.sleep(10)
+        run_grass_websocket()
+    
+    def on_open(ws):
+        print("🤝 Conexión WebSocket abierta. Esperando autenticación...")
+        # Enviar mensaje de autenticación si es necesario, aunque el token ya va en la URL
+    
+    ws = websocket.WebSocketApp(ws_url,
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
+    ws.run_forever()
 
-def mantener_conexion():
-    # Enviar una señal a Grass para decirles que estás activo
-    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    # Esta es una URL de ejemplo, la URL real es parte del WebSocket de Grass
-    response = requests.get("https://app.getgrass.io", headers=headers)
-    if response.status_code == 200:
-        print("🌐 Conexión activa. Acumulando puntos de red...")
-    else:
-        print(f"❌ Error de conexión: {response.status_code}")
+if __name__ == "__main__":
+    print("Iniciando bot...")
+    run_grass_websocket()
 
-# El bot se mantendrá activo cada 15 minutos
-while True:
-    mantener_conexion()
-    time.sleep(900)
